@@ -4,17 +4,20 @@ import (
 	"fmt"
 	"gopkg.in/yaml.v3"
 	"os"
+	"time"
 )
 
 var Setting = new(config)
 
 type config struct {
-	AppId        string `yaml:"appId"`
-	AppKey       string `yaml:"appKey"`
-	SecretKey    string `yaml:"secretKey"`
-	AccessToken  string `yaml:"accessToken"`
-	RefreshToken string `yaml:"refreshToken"`
-	ExpiresIn    int    `yaml:"expiresIn"`
+	DefaultFolder string    `yaml:"defaultFolder"`
+	AppId         string    `yaml:"appId"`
+	AppKey        string    `yaml:"appKey"`
+	SecretKey     string    `yaml:"secretKey"`
+	AccessToken   string    `yaml:"accessToken"`
+	RefreshToken  string    `yaml:"refreshToken"`
+	ExpiresIn     int       `yaml:"expiresIn"`
+	LastRefresh   time.Time `yaml:"lastRefresh"`
 }
 
 func init() {

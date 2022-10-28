@@ -18,15 +18,15 @@ Developing...
 ...`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Use bdptool -h or --help for help.")
-		fmt.Printf("rootCmd获得参数:%s \n", Folder)
-		fmt.Println("看下config")
-		fmt.Printf("config:%s,%s,%s", config.Setting.SecretKey, config.Setting.AppKey, config.Setting.AppId)
 	},
 }
 
 func initCommands() {
 	initTestToken()
-	rootCmd.PersistentFlags().StringVarP(&Folder, "dic", "d", "D:\\temp\\test", "sync dir")
+	rootCmd.PersistentFlags().StringVarP(&Folder, "dic", "d", config.Setting.DefaultFolder, "local sync dir")
+	if Folder != "" {
+		config.Setting.DefaultFolder = Folder
+	}
 	initCheck()
 	initSync()
 }

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"BaiduP-PST/config"
 	"BaiduP-PST/pkg/driver"
 	"BaiduP-PST/util"
 	"fmt"
@@ -21,6 +22,11 @@ var checkCmd = &cobra.Command{
 			fmt.Println("dic check OK...")
 		}
 
+		if util.CheckTime(&config.Setting.LastRefresh, config.Setting.ExpiresIn) {
+			fmt.Println("prepare refresh token...")
+			driver.RefreshToken()
+		}
+		fmt.Println("prepare check token...")
 		driver.CheckToken()
 	},
 }
