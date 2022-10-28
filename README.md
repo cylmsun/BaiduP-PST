@@ -1,5 +1,5 @@
 # BaiduP-PST
-Baidu Netdisk Personal Sync tool
+Baidu Net disk Personal Sync tool
 
 ![GitHub](https://img.shields.io/github/license/cylmsun/BaiduP-PST)
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/cylmsun/BaiduP-PST)
