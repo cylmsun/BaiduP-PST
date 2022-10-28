@@ -5,3 +5,4 @@ signKey: ''
 accessToken: ''
 refreshToken: ''
 expiresIn: 0
+lastRefresh: ''

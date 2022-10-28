@@ -1,7 +1,6 @@
 package driver
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 )
@@ -15,7 +14,6 @@ func SendHttpRequest(method string, url string, body io.Reader, headerMap map[st
 	if headerMap != nil {
 		for k, v := range headerMap {
 			request.Header.Set(k, v)
-			fmt.Println(k, v)
 		}
 	}
 

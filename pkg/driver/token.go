@@ -28,7 +28,7 @@ func RefreshToken() {
 		fmt.Println(err)
 	}
 
-	fmt.Printf("最终结果：%s,%s,%d", tokenBody.AccessToken, tokenBody.RefreshToken, tokenBody.ExpiresIn)
+	fmt.Println("refresh token finish")
 }
 
 func CheckToken() {
@@ -49,7 +49,7 @@ func CheckToken() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Printf("校验成功，查询网盘容量结果:总共 %d GB,已用 %d GB", accGB(q.Total), accGB(q.Used))
+	fmt.Printf("check token finish,netdisk space:total %d GB,used %d GB", accGB(q.Total), accGB(q.Used))
 }
 
 func accGB(n uint64) (f uint64) {
