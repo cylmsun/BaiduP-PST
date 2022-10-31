@@ -28,6 +28,7 @@ func initCommands() {
 		config.Setting.DefaultFolder = Folder
 	}
 	initCheck()
+	initFolderCheck()
 	initSync()
 }
 
