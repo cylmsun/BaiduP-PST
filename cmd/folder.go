@@ -16,7 +16,7 @@ var wg sync.WaitGroup
 // check http connection
 var folderCmd = &cobra.Command{
 	Use:   "folder",
-	Short: "check folder",
+	Short: "compare folder and files",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Prepare seeking different local and cloud folder and file")
@@ -76,6 +76,7 @@ func checkCloudFolder() (infos []model.DicInfo) {
 // three types: local new,cloud new, conflict
 func compareDetail(clouds []model.DicInfo, locals []model.DicInfo, c chan<- map[string][]model.DicInfo) {
 
+	// todo maybe there is a better way to acc
 	go getLocalNew(clouds, locals, c)
 	go getCloudNew(clouds, locals, c)
 	go getConflict(clouds, locals, c)
