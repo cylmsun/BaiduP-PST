@@ -28,6 +28,7 @@ func initCommands() {
 		config.Setting.DefaultFolder = Folder
 	}
 	initCheck()
+	initFolderCheck()
 	initSync()
 }
 
@@ -37,12 +38,6 @@ func Execute() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	//tick := time.Tick(time.Second * 1)
-	//i := 0
-	//for range tick {
-	//	i++
-	//	fmt.Printf("定时执行:%d \n", i)
-	//}
 }
 
 func initTestToken() {
