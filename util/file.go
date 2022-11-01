@@ -28,7 +28,7 @@ func CheckDir(path *string) (b bool, err error) {
 	return
 }
 
-func GetCloudFolderDetails(path string) (list []model.NetDicInfo, err error) {
+func GetCloudFolderDetails(path string) (list []model.DicInfo, err error) {
 	var requestBody string
 	tokenBody := *base.TokenBody
 	u := fmt.Sprintf("https://pan.baidu.com/rest/2.0/xpan/multimedia?method=listall&path=%s&access_token=%s&recursion=1", url.QueryEscape(path), tokenBody.AccessToken)
@@ -51,21 +51,21 @@ func GetCloudFolderDetails(path string) (list []model.NetDicInfo, err error) {
 	return
 }
 
-func GetLocalFolderDetails(path string) (details map[string]any, err error) {
-	stat, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		err = errors.New(fmt.Sprintf("no such dictionary:%s", path))
-		return
-	}
-	if !stat.IsDir() {
-		err = errors.New(fmt.Sprintf("%s is not a dictionary", path))
-		return
-	}
+//func GetLocalFolderDetails(path string) (details map[string]any, err error) {
+//	stat, err := os.Stat(path)
+//	if os.IsNotExist(err) {
+//		err = errors.New(fmt.Sprintf("no such dictionary:%s", path))
+//		return
+//	}
+//	if !stat.IsDir() {
+//		err = errors.New(fmt.Sprintf("%s is not a dictionary", path))
+//		return
+//	}
+//
+//	return
+//}
 
-	return
-}
-
-func ReadDirssss(path string) (infos []model.DicInfo) {
+func GetLocalFolderDetails(path string) (infos []model.DicInfo) {
 	stat, err := os.Stat(path)
 	if err != nil {
 		fmt.Printf("readDir error:%s", err.Error())
@@ -73,7 +73,7 @@ func ReadDirssss(path string) (infos []model.DicInfo) {
 	if stat.IsDir() {
 		dir, _ := os.ReadDir(path)
 		for _, entry := range dir {
-			d := ReadDirssss(path + "/" + entry.Name())
+			d := GetLocalFolderDetails(path + "/" + entry.Name())
 			infos = append(infos, d...)
 		}
 	} else {
