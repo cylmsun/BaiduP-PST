@@ -85,24 +85,36 @@ func Upload(path string) {
 	// 4.create
 }
 
+// file.ReadAt
 func splitFile(path string) {
-	//file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, os.ModePerm)
-	//defer file.Close()
-	//if err != nil {
-	//	fmt.Printf("readDir error:%s", err.Error())
-	//	return
-	//}
-	//
-	//split_list := make([]string, 0)
-	//content_md5 := ""
-	//slice_md5 := ""
-	//
-	//data := make([]byte, 1024, 1024)
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, os.ModePerm)
+	defer file.Close()
+	if err != nil {
+		fmt.Printf("readDir error:%s", err.Error())
+		return
+	}
+	fileInfo, err := file.Stat()
+	if err != nil {
+		fmt.Printf("fileInfo error:%s", err.Error())
+		return
+	}
+
+	splitNums := (int(fileInfo.Size()) + bufferSize - 1) / bufferSize
+
+	for i := 0; i < splitNums; i++ {
+		//go createTmpFile()
+	}
+
+	//buf := make([]byte, bufferSize)
 
 }
 
-func createTmpFile(path string) {
-
+func createTmpFile(path string, name string, suffix string, num int) {
+	tempName := fmt.Sprintf("%s/%s_%d.%s", path, name, num, suffix)
+	_, err := os.Create(tempName)
+	if err != nil {
+		fmt.Printf("createTmpFile error:%s", err.Error())
+	}
 }
 
 func bool2int(b bool) (i int8) {
