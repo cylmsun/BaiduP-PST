@@ -12,6 +12,8 @@ import (
 	"strings"
 )
 
+var bufferSize = 4 * 1024 * 1024
+
 // CheckDir 检查路径目录,不实现创建目录的功能
 func CheckDir(path *string) (b bool, err error) {
 	b = false
@@ -51,20 +53,6 @@ func GetCloudFolderDetails(path string) (list []model.DicInfo, err error) {
 	return
 }
 
-//func GetLocalFolderDetails(path string) (details map[string]any, err error) {
-//	stat, err := os.Stat(path)
-//	if os.IsNotExist(err) {
-//		err = errors.New(fmt.Sprintf("no such dictionary:%s", path))
-//		return
-//	}
-//	if !stat.IsDir() {
-//		err = errors.New(fmt.Sprintf("%s is not a dictionary", path))
-//		return
-//	}
-//
-//	return
-//}
-
 func GetLocalFolderDetails(path string) (infos []model.DicInfo) {
 	stat, err := os.Stat(path)
 	if err != nil {
@@ -87,6 +75,46 @@ func GetLocalFolderDetails(path string) (infos []model.DicInfo) {
 		infos = append(infos, info)
 	}
 	return
+}
+
+func Upload(path string) {
+	// step:
+	// 1. slice file
+	// 2.precreate
+	// 3.superfile2
+	// 4.create
+}
+
+// file.ReadAt
+func splitFile(path string) {
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, os.ModePerm)
+	defer file.Close()
+	if err != nil {
+		fmt.Printf("readDir error:%s", err.Error())
+		return
+	}
+	fileInfo, err := file.Stat()
+	if err != nil {
+		fmt.Printf("fileInfo error:%s", err.Error())
+		return
+	}
+
+	splitNums := (int(fileInfo.Size()) + bufferSize - 1) / bufferSize
+
+	for i := 0; i < splitNums; i++ {
+		//go createTmpFile()
+	}
+
+	//buf := make([]byte, bufferSize)
+
+}
+
+func createTmpFile(path string, name string, suffix string, num int) {
+	tempName := fmt.Sprintf("%s/%s_%d.%s", path, name, num, suffix)
+	_, err := os.Create(tempName)
+	if err != nil {
+		fmt.Printf("createTmpFile error:%s", err.Error())
+	}
 }
 
 func bool2int(b bool) (i int8) {
