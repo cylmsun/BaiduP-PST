@@ -88,9 +88,10 @@ func GetLocalFolderDetails(path string) (infos []model.DicInfo) {
 func Upload(path string) {
 	// step:
 	//1. slice file
-	_ = splitFile(path)
+	fileSpits := splitFile(path)
 	// 2.precreate
-
+	preCreate(path, fileSpits)
+	
 	// 3.superfile2
 	// 4.create
 }
@@ -146,6 +147,46 @@ func createTmpFile(path string, name string, suffix string, num int, c chan<- fi
 	}
 	spit := fileSpit{f: f, num: num}
 	c <- spit
+}
+
+func preCreate(path string, f []fileSpit) (id string) {
+	var requestBody map[string]any
+	tokenBody := *base.TokenBody
+	u := fmt.Sprintf("https://pan.baidu.com/rest/2.0/xpan/file?method=precreate&access_token=%s", tokenBody.AccessToken)
+	m := map[string]string{"User-Agent": "pan.baidu.com"}
+
+	blockList := make([]string, len(f), len(f))
+	for i := 0; i < len(f); i++ {
+		blockList[i] = f[i].md5
+	}
+
+	requestBody["path"] = path
+	requestBody["size"] = 0
+	requestBody["isdir"] = 0
+	requestBody["autoinit"] = 1
+	requestBody["block_list"] = blockList
+
+	j, err := json.Marshal(requestBody)
+	if err != nil {
+		fmt.Printf("170 error:%s", err.Error())
+	}
+	responseBody, err := driver.SendHttpRequest("POST", u, strings.NewReader(string(j)), m)
+	if err != nil {
+		fmt.Printf("precreate error:%s \n", err.Error())
+		return
+	}
+
+	var res model.PreCreateResp
+	err = json.Unmarshal(responseBody, &res)
+	if err != nil {
+		fmt.Printf("SendHttpRequest json.Unmarshal error:%s \n", err.Error())
+		return
+	}
+	if res.ErrNo != 0 {
+		fmt.Printf("precreate error:%s \n", err.Error())
+	}
+	id = res.UploadId
+	return id
 }
 
 func bool2int(b bool) (i int8) {

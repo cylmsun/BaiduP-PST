@@ -6,9 +6,10 @@ type NetDicInfoResp struct {
 	Cursor int       `json:"cursor"`
 }
 
-//type NetDicInfo struct {
-//	ServerMtime    string `json:"server_mtime"`
-//	ServerFilename string `json:"server_filename"`
-//	Path           string `json:"path"`
-//	IsDir          int8   `json:"isdir"`
-//}
+type PreCreateResp struct {
+	ErrNo      int    `json:"errno"`
+	Path       string `json:"path"`
+	UploadId   string `json:"uploadid"`
+	ReturnType int    `json:"return_type"`
+	BlockList  string `json:"block_list"`
+}
