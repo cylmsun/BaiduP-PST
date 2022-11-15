@@ -4,6 +4,8 @@ import (
 	"BaiduP-PST/pkg/base"
 	"BaiduP-PST/pkg/driver"
 	"BaiduP-PST/pkg/model"
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +13,12 @@ import (
 	"os"
 	"strings"
 )
+
+type fileSpit struct {
+	num int
+	f   *os.File
+	md5 string
+}
 
 var bufferSize = 4 * 1024 * 1024
 
@@ -79,14 +87,16 @@ func GetLocalFolderDetails(path string) (infos []model.DicInfo) {
 
 func Upload(path string) {
 	// step:
-	// 1. slice file
+	//1. slice file
+	_ = splitFile(path)
 	// 2.precreate
+
 	// 3.superfile2
 	// 4.create
 }
 
 // file.ReadAt
-func splitFile(path string) {
+func splitFile(path string) (f []fileSpit) {
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, os.ModePerm)
 	defer file.Close()
 	if err != nil {
@@ -98,23 +108,44 @@ func splitFile(path string) {
 		fmt.Printf("fileInfo error:%s", err.Error())
 		return
 	}
-
 	splitNums := (int(fileInfo.Size()) + bufferSize - 1) / bufferSize
 
+	chanF := make(chan fileSpit, splitNums)
+	defer close(chanF)
 	for i := 0; i < splitNums; i++ {
-		//go createTmpFile()
+		go createTmpFile(file.Name(), fileInfo.Name(), "", i, chanF)
 	}
 
-	//buf := make([]byte, bufferSize)
+	tempFiles := make([]fileSpit, splitNums, splitNums)
+	// 期望：协程全部结束
+	for i := 0; i < splitNums; i++ {
+		buffer := make([]byte, bufferSize)
+		tempFiles[i] = <-chanF
+		at, err := file.ReadAt(buffer, int64(bufferSize*tempFiles[i].num))
+		if err != nil {
+			fmt.Printf("ReadAt error %d:%s", at, err.Error())
+			return
+		}
+		tempFiles[i].f.Write(buffer)
+
+		md5String := md5.New()
+		toString := hex.EncodeToString(md5String.Sum(buffer))
+		tempFiles[i].md5 = toString
+	}
+
+	return tempFiles
 
 }
 
-func createTmpFile(path string, name string, suffix string, num int) {
+func createTmpFile(path string, name string, suffix string, num int, c chan<- fileSpit) {
+	// fileName: ***/name_splitNumber.suffix
 	tempName := fmt.Sprintf("%s/%s_%d.%s", path, name, num, suffix)
-	_, err := os.Create(tempName)
+	f, err := os.Create(tempName)
 	if err != nil {
 		fmt.Printf("createTmpFile error:%s", err.Error())
 	}
+	spit := fileSpit{f: f, num: num}
+	c <- spit
 }
 
 func bool2int(b bool) (i int8) {
