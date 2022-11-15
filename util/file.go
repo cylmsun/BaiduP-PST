@@ -4,6 +4,8 @@ import (
 	"BaiduP-PST/pkg/base"
 	"BaiduP-PST/pkg/driver"
 	"BaiduP-PST/pkg/model"
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +13,12 @@ import (
 	"os"
 	"strings"
 )
+
+type fileSpit struct {
+	num int
+	f   *os.File
+	md5 string
+}
 
 var bufferSize = 4 * 1024 * 1024
 
@@ -79,14 +87,17 @@ func GetLocalFolderDetails(path string) (infos []model.DicInfo) {
 
 func Upload(path string) {
 	// step:
-	// 1. slice file
+	//1. slice file
+	fileSpits := splitFile(path)
 	// 2.precreate
+	preCreate(path, fileSpits)
+	
 	// 3.superfile2
 	// 4.create
 }
 
 // file.ReadAt
-func splitFile(path string) {
+func splitFile(path string) (f []fileSpit) {
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, os.ModePerm)
 	defer file.Close()
 	if err != nil {
@@ -98,23 +109,84 @@ func splitFile(path string) {
 		fmt.Printf("fileInfo error:%s", err.Error())
 		return
 	}
-
 	splitNums := (int(fileInfo.Size()) + bufferSize - 1) / bufferSize
 
+	chanF := make(chan fileSpit, splitNums)
+	defer close(chanF)
 	for i := 0; i < splitNums; i++ {
-		//go createTmpFile()
+		go createTmpFile(file.Name(), fileInfo.Name(), "", i, chanF)
 	}
 
-	//buf := make([]byte, bufferSize)
+	tempFiles := make([]fileSpit, splitNums, splitNums)
+	// 期望：协程全部结束
+	for i := 0; i < splitNums; i++ {
+		buffer := make([]byte, bufferSize)
+		tempFiles[i] = <-chanF
+		at, err := file.ReadAt(buffer, int64(bufferSize*tempFiles[i].num))
+		if err != nil {
+			fmt.Printf("ReadAt error %d:%s", at, err.Error())
+			return
+		}
+		tempFiles[i].f.Write(buffer)
+
+		md5String := md5.New()
+		toString := hex.EncodeToString(md5String.Sum(buffer))
+		tempFiles[i].md5 = toString
+	}
+
+	return tempFiles
 
 }
 
-func createTmpFile(path string, name string, suffix string, num int) {
+func createTmpFile(path string, name string, suffix string, num int, c chan<- fileSpit) {
+	// fileName: ***/name_splitNumber.suffix
 	tempName := fmt.Sprintf("%s/%s_%d.%s", path, name, num, suffix)
-	_, err := os.Create(tempName)
+	f, err := os.Create(tempName)
 	if err != nil {
 		fmt.Printf("createTmpFile error:%s", err.Error())
 	}
+	spit := fileSpit{f: f, num: num}
+	c <- spit
+}
+
+func preCreate(path string, f []fileSpit) (id string) {
+	var requestBody map[string]any
+	tokenBody := *base.TokenBody
+	u := fmt.Sprintf("https://pan.baidu.com/rest/2.0/xpan/file?method=precreate&access_token=%s", tokenBody.AccessToken)
+	m := map[string]string{"User-Agent": "pan.baidu.com"}
+
+	blockList := make([]string, len(f), len(f))
+	for i := 0; i < len(f); i++ {
+		blockList[i] = f[i].md5
+	}
+
+	requestBody["path"] = path
+	requestBody["size"] = 0
+	requestBody["isdir"] = 0
+	requestBody["autoinit"] = 1
+	requestBody["block_list"] = blockList
+
+	j, err := json.Marshal(requestBody)
+	if err != nil {
+		fmt.Printf("170 error:%s", err.Error())
+	}
+	responseBody, err := driver.SendHttpRequest("POST", u, strings.NewReader(string(j)), m)
+	if err != nil {
+		fmt.Printf("precreate error:%s \n", err.Error())
+		return
+	}
+
+	var res model.PreCreateResp
+	err = json.Unmarshal(responseBody, &res)
+	if err != nil {
+		fmt.Printf("SendHttpRequest json.Unmarshal error:%s \n", err.Error())
+		return
+	}
+	if res.ErrNo != 0 {
+		fmt.Printf("precreate error:%s \n", err.Error())
+	}
+	id = res.UploadId
+	return id
 }
 
 func bool2int(b bool) (i int8) {
