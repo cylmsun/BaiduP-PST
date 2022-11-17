@@ -14,7 +14,7 @@ import (
 	"strings"
 )
 
-type fileSpit struct {
+type fileSplit struct {
 	num int
 	f   *os.File
 	md5 string
@@ -90,14 +90,14 @@ func Upload(path string) {
 	//1. slice file
 	fileSpits := splitFile(path)
 	// 2.precreate
-	preCreate(path, fileSpits)
-	
-	// 3.superfile2
-	// 4.create
+	preCreateId := preCreate(path, fileSpits)
+	// 3.upload
+	splitsUpload(fileSpits, preCreateId)
+	// 4.join
 }
 
-// file.ReadAt
-func splitFile(path string) (f []fileSpit) {
+// todo order splits
+func splitFile(path string) (f []fileSplit) {
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, os.ModePerm)
 	defer file.Close()
 	if err != nil {
@@ -111,13 +111,13 @@ func splitFile(path string) (f []fileSpit) {
 	}
 	splitNums := (int(fileInfo.Size()) + bufferSize - 1) / bufferSize
 
-	chanF := make(chan fileSpit, splitNums)
+	chanF := make(chan fileSplit, splitNums)
 	defer close(chanF)
 	for i := 0; i < splitNums; i++ {
 		go createTmpFile(file.Name(), fileInfo.Name(), "", i, chanF)
 	}
 
-	tempFiles := make([]fileSpit, splitNums, splitNums)
+	tempFiles := make([]fileSplit, splitNums, splitNums)
 	// 期望：协程全部结束
 	for i := 0; i < splitNums; i++ {
 		buffer := make([]byte, bufferSize)
@@ -138,18 +138,18 @@ func splitFile(path string) (f []fileSpit) {
 
 }
 
-func createTmpFile(path string, name string, suffix string, num int, c chan<- fileSpit) {
+func createTmpFile(path string, name string, suffix string, num int, c chan<- fileSplit) {
 	// fileName: ***/name_splitNumber.suffix
 	tempName := fmt.Sprintf("%s/%s_%d.%s", path, name, num, suffix)
 	f, err := os.Create(tempName)
 	if err != nil {
 		fmt.Printf("createTmpFile error:%s", err.Error())
 	}
-	spit := fileSpit{f: f, num: num}
+	spit := fileSplit{f: f, num: num}
 	c <- spit
 }
 
-func preCreate(path string, f []fileSpit) (id string) {
+func preCreate(path string, f []fileSplit) (id string) {
 	var requestBody map[string]any
 	tokenBody := *base.TokenBody
 	u := fmt.Sprintf("https://pan.baidu.com/rest/2.0/xpan/file?method=precreate&access_token=%s", tokenBody.AccessToken)
@@ -187,6 +187,30 @@ func preCreate(path string, f []fileSpit) (id string) {
 	}
 	id = res.UploadId
 	return id
+}
+
+func splitsUpload(f []fileSplit, id string) {
+	chanF := make(chan string, len(f))
+	for i := 0; i < len(f); i++ {
+		go upload(f[i], id, chanF)
+	}
+}
+
+func upload(f fileSplit, id string, chanF chan<- string) {
+	stat, _ := f.f.Stat()
+	size := stat.Size()
+	bytes := make([]byte, size)
+	f.f.ReadAt(bytes, 0)
+
+	tokenBody := *base.TokenBody
+	u := fmt.Sprintf("http://d.pcs.baidu.com/rest/2.0/pcs/superfile2?method=upload&access_token=%s", tokenBody.AccessToken)
+	m := map[string]string{}
+
+	//_, err := driver.SendHttpRequest("POST", u, strings.NewReader(string(bytes)), m)
+	//if err != nil {
+	//	fmt.Printf("upload split file error:%s", err.Error())
+	//}
+
 }
 
 func bool2int(b bool) (i int8) {
